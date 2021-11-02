@@ -1,33 +1,47 @@
 <?php
     namespace App\Services;
-    use App\Common\Environment;
+    use App\Common\databaseConnector;
 
     class AuthService{
         public function login(){
-            if(isset($_POST['email'])){
-                $header =[
-                    'typ' => 'JWT',
-                    'alg' => 'HS256'
-                ];
-    
-                $payload = [
-                    'email' => $_POST['email']
-                ];
-    
-                $header = json_encode($header);
-                $payload = json_encode($payload);
-    
-                $header = self::base64UrlEncode($header);
-                $payload = self::base64UrlEncode($payload);
-    
-                $sign = hash_hmac('sha256', $header . '.' . $payload, $_ENV['JWT_KEY'], true);
-                $sign = self::base64UrlEncode($sign);
-    
-                $token = $header.'.'.$payload.'.'.$sign;
-    
-                return $token;
+            $_POST = json_decode(file_get_contents('php://input'), true);
+            if(isset($_POST['email']) && isset($_POST['senha'])){
+                $connPdo = DatabaseConnector::getConnection();
+                $sql = 'SELECT nome_cli, cpf_cli, foto_cli FROM cliente WHERE email_cli = :email AND senha_cli = :senha';
+                $stmt = $connPdo->prepare($sql);
+                $stmt->bindValue(':email', $_POST['email']);
+                $stmt->bindValue(':senha', $_POST['senha']);
+                $stmt -> execute();
+
+                if ($stmt->rowCount() > 0){
+                    $header =[
+                        'typ' => 'JWT',
+                        'alg' => 'HS256'
+                    ];
+        
+                    $payload = [
+                        'email' => $_POST['email']
+                    ];
+        
+                    $header = json_encode($header);
+                    $payload = json_encode($payload);
+        
+                    $header = self::base64UrlEncode($header);
+                    $payload = self::base64UrlEncode($payload);
+        
+                    $sign = hash_hmac('sha256', $header . '.' . $payload, $_ENV['JWT_KEY'], true);
+                    $sign = self::base64UrlEncode($sign);
+        
+                    $token = $header.'.'.$payload.'.'.$sign;
+        
+                    $jsonData = array("key" => $token, "usuario" => $stmt->fetchAll(\PDO::FETCH_ASSOC));
+                    return $jsonData;
+
+                } else {
+                    throw new \Exception('Usuário inexistente no banco de dados.'); 
+                }
             } 
-            throw new \Exception('Usuário inexistente');
+            throw new \Exception('Faça um POST com o email e senha do usuário!');
         }
 
         public static function check(){

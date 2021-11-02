@@ -5,21 +5,6 @@
     class User{
         private static $table = 'cliente';
 
-        public static function get($data){
-            $connPdo = DatabaseConnector::getConnection();
-            $sql = 'SELECT * FROM '.self::$table.' WHERE email_cli = :email AND senha_cli = :senha';
-            $stmt = $connPdo->prepare($sql);
-            $stmt->bindValue(':email', $data['email']);
-            $stmt->bindValue(':senha', $data['senha']);
-            $stmt->execute();
-
-            if($stmt->rowCount() > 0){
-                return $stmt->fetch(\PDO::FETCH_ASSOC);
-            } else {
-                throw new \Exception('Nenhum usuário encontrado!');
-            }
-        }
-
         public static function insert($data){
             $connPdo = DatabaseConnector::getConnection();
             $sql = 'INSERT INTO '.self::$table.' (email_cli, nome_cli, cpf_cli, senha_cli, foto_cli) VALUES (:email, :nome, :cpf, :senha, :foto)';
@@ -45,6 +30,24 @@
             $stmt->bindValue(':email', $data);
             $stmt -> execute();
             return 'Usuário deletado com sucesso!';
+        }
+
+        public static function put($data){
+            $connPdo = DatabaseConnector::getConnection();
+            $sql = 'UPDATE '.self::$table.' SET nome_cli = :nome, cpf_cli = :cpf, senha_cli = :senha, foto_cli= :foto WHERE email_cli = :email';
+            $stmt = $connPdo->prepare($sql);
+            $stmt->bindValue(':nome', $data[1]['nome']);
+            $stmt->bindValue(':cpf', $data[1]['cpf']);
+            $stmt->bindValue(':senha', $data[1]['senha']);
+            $stmt->bindValue(':foto', $data[1]['foto']);
+            $stmt->bindValue(':email', $data[0]);
+            $stmt -> execute(); 
+          
+            if ($stmt->rowCount() > 0){
+                return 'Usuário atualizado com sucesso!';
+            } else {
+                throw new \Exception('Falha ao atualizar o usuário!'); 
+            }
         }
     }
 ?>
