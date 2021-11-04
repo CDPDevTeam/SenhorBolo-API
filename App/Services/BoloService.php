@@ -5,7 +5,11 @@
     class BoloService{
         public function get($data){
             if($data){
-                return Bolo::get($data);
+                if($data[0] === 'recomendacao'){
+                    return Bolo::getRecommendation();
+                } else {
+                    return Bolo::getSearch($data);
+                }
             } else {
                 return Bolo::getAll();
             }

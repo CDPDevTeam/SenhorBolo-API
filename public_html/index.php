@@ -5,8 +5,10 @@
 
     $apiRoute = explode('/', $_GET['url']);
 
-    // Verifica o endereço da api é válido
+    // Verifica se o endereço esta chamando a API
     if(isset($apiRoute[1])){
+
+        // Caso a rota seja uma restrita ao usuário, a JWT é verificada
         if($apiRoute[1] == 'address' | $apiRoute[1] == 'creditcard' | $apiRoute[1] == 'pedido'){
             if(AuthService::check()){
                 $service = 'App\Services\\'.ucfirst($apiRoute[1]).'Service';
@@ -20,11 +22,13 @@
                 http_response_code(401); //Unauthorized
                 exit;
             }
-
+        // Caso não seja
         } else if ($apiRoute[1] != 'auth'){
             $service = 'App\Services\\'.ucfirst($apiRoute[1]).'Service';
             $method = strtolower($_SERVER['REQUEST_METHOD']);
-            if(isset($apiRoute[2])){
+            if(isset($apiRoute[2]) && isset($apiRoute[3])){
+                $requestData = array($apiRoute[2], $apiRoute[3]);
+            } else if (isset($apiRoute[2])){
                 $requestData = array($apiRoute[2]);
             } else {
                 $requestData = null;
@@ -36,6 +40,7 @@
         }
 
         try{
+            // Chama a classe e função, com os parâmetros que o usuário inseriu (GET)
             $response = call_user_func_array(array(new $service, $method), array($requestData));
             http_response_code(200);
             echo json_encode(array('success' => true, 'data' => $response));
