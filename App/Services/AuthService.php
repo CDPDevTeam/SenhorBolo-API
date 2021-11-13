@@ -29,7 +29,7 @@
                     $header = self::base64UrlEncode($header);
                     $payload = self::base64UrlEncode($payload);
         
-                    $sign = hash_hmac('sha256', $header . '.' . $payload, $_ENV['JWT_KEY'], true);
+                    $sign = hash_hmac('sha256', $header . '.' . $payload, '5cgDVGsD7BU6EZst', true);
                     $sign = self::base64UrlEncode($sign);
         
                     $token = $header.'.'.$payload.'.'.$sign;
@@ -74,11 +74,17 @@
 
         private static function base64UrlEncode($data)
         {
-            return strtr( base64_encode($data), '+/=', '-_,' );
+            $b64 = base64_encode($data);
+            if ($b64 === false) {
+                return false;
+            }
+            $url = strtr($b64, '+/', '-_');
+            return rtrim($url, '=');
         }
 
-        private static function base64UrlDecode($data){
-            return base64_decode(strtr($data, '-_,', '+/='));
+        private static function base64UrlDecode($data, $strict = false){
+            $b64 = strtr($data, '-_', '+/');
+            return base64_decode($b64, $strict);
         }
     }
 ?>

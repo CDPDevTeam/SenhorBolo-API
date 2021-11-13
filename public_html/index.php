@@ -9,7 +9,7 @@
     if(isset($apiRoute[1])){
 
         // Caso a rota seja uma restrita ao usuário, a JWT é verificada
-        if($apiRoute[1] == 'address' | $apiRoute[1] == 'creditcard' | $apiRoute[1] == 'pedido'){
+        if($apiRoute[1] == 'address' | $apiRoute[1] == 'pedido' | $apiRoute[1] == 'cupom'){
             if(AuthService::check()){
                 $service = 'App\Services\\'.ucfirst($apiRoute[1]).'Service';
                 $method = strtolower($_SERVER['REQUEST_METHOD']);
@@ -43,7 +43,7 @@
             // Chama a classe e função, com os parâmetros que o usuário inseriu (GET)
             $response = call_user_func_array(array(new $service, $method), array($requestData));
             http_response_code(200);
-            echo json_encode(array('success' => true, 'data' => $response));
+            echo json_encode($response);
             exit;
           } catch (\Exception $e) {
               http_response_code(404);

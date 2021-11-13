@@ -12,8 +12,12 @@
             }
         }
 
-        public function get($data){
-            return Pedido::get($data[0]);
+        public function get($userData){
+            if($userData[0] === $userData[1]){
+                return Pedido::get($userData[0]);
+                } else {
+                    throw new \Exception('Usuário diferente de sua chave JWT!');
+            }
         }
     }
 ?>

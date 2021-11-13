@@ -48,20 +48,47 @@
 
         public static function get($data){
             $connPdo = DatabaseConnector::getConnection();
-            $sql = 'SELECT produto.nome_prod, LOWER(produto.foto_prod) AS foto_prod,
-            qtde_pedido.qtde_pedido,
-            SUM(qtde_pedido.qtde_pedido * qtde_pedido.valor_unitario) AS total_prod
-            FROM pedido, qtde_pedido, produto 
-            WHERE pedido.id_pedido = :idPedido
-            AND qtde_pedido.id_prod_fk = produto.id_prod
-            GROUP BY produto.nome_prod, produto.foto_prod, qtde_pedido.qtde_pedido';
+
+            // Seleciona todas as compras do cliente
+            $sql = 'SELECT id_pedido, status_compra
+            FROM pedido WHERE email_cli_fk = :email';
             $stmt = $connPdo->prepare($sql);
-            $stmt->bindValue(':idPedido', $data);
+            $stmt->bindValue(':email', $data);
             $stmt -> execute();
 
+            $pedidos = [];
             
             if($stmt->rowCount() > 0){
-                return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+                $row = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                
+                // Para cada compra do cliente, os produtos são adicionados 
+                for($i = 0; $i < sizeof($row); $i++){
+                    $pedidos[$i] = $row[$i];
+
+                    // Seleção dos produtos, de acordo com o ID do pedido
+                    $sqlItem = 'SELECT
+                    b.id_prod,
+                    b.nome_prod,
+                    b.categoria_prod_fk,
+                    LOWER(b.foto_prod) AS foto_prod,
+                    qtde.qtde_pedido,
+                    SUM (qtde.qtde_pedido * qtde.valor_unitario) AS total_prod
+                    FROM
+                        produto b
+                    INNER JOIN qtde_pedido qtde
+                        ON b.id_prod = qtde.id_prod_fk
+                    INNER JOIN pedido p
+                        ON p.id_pedido = qtde.id_pedido_fk AND p.id_pedido ='.$pedidos[$i]["id_pedido"].'
+                    GROUP BY id_pedido, id_prod, qtde.qtde_pedido
+                    ORDER BY id_pedido DESC';
+                    $stmtItem = $connPdo->prepare($sqlItem);
+                    $stmtItem -> execute();
+
+                    $itemPedido = $stmtItem->fetchAll(\PDO::FETCH_ASSOC);
+                    $pedidos[$i]["itens_pedido"] = $itemPedido; // Atribuição dos itens ao pedido
+                }
+                return $pedidos;
             } else {
                 throw new \Exception('Pedido inexistente no banco de dados!');
             }
