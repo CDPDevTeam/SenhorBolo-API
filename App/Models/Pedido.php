@@ -16,34 +16,61 @@
             $stmt->bindValue(':cupom', $data['cupom']);
             $stmt->bindValue(':dataCompra', $date);
             $stmt->bindValue(':dataEntrega', date('Y-m-d', strtotime($date. ' + 4 days')));
-            $stmt->bindValue(':statusCompra', $data['statusCompra']);
+            $stmt->bindValue(':statusCompra', 'Pedido recebido');
             $stmt->bindValue(':ecommerce', true);
             $stmt -> execute();
 
             if ($stmt->rowCount() > 0){
-                return 'Pedido inserido com sucesso!';
+
+                //Verificar se tem cupom
+                if($data['cupom'] != null){
+                    self::disableCupom($data['cupom'], $data['email']);
+                }
+            
+                //Seleciona o ID do pedido que foi criado
+                $connPdoTeste = DatabaseConnector::getConnection();
+                $sql = 'SELECT id_pedido FROM '.self::$table.' WHERE email_cli_fk = :email ORDER BY id_pedido DESC LIMIT 1';
+                $stmtTeste = $connPdoTeste->prepare($sql);
+                $stmtTeste -> bindValue(':email', $data['email']);
+                $stmtTeste -> execute();
+                $idPedido = $stmtTeste->fetchAll(\PDO::FETCH_ASSOC);                
+
+                $produtos = $data['produtos'];
+
+                //Para cada b
+                foreach ($produtos as $bolo){
+                    self::insertItem($idPedido[0]['id_pedido'], $bolo);
+                }
+
+                return 'Pedido inserido com sucesso';
+
             } else {
                 throw new \Exception('Falha ao inserir pedido!'); 
             }
         }
 
-        public static function insertItem($data){
-            $date = date('Y-m-d');
+        public static function insertItem($idPedido, $data){
             $connPdo = DatabaseConnector::getConnection();
             $sql = 'INSERT INTO qtde_pedido (id_prod_fk, id_pedido_fk, valor_unitario, qtde_pedido)
             VALUES (:idProduto, :idPedido, :valorUnitario, :qtdePedido)';
             $stmt = $connPdo->prepare($sql);
             $stmt->bindValue(':idProduto', $data['idProduto']);
-            $stmt->bindValue(':idPedido', $data['idPedido']);
+            $stmt->bindValue(':idPedido', $idPedido);
             $stmt->bindValue(':valorUnitario', $data['valorUnitario']);
             $stmt->bindValue(':qtdePedido', $data['qtdePedido']);
             $stmt -> execute();
+            $connPdo = null;
+        }
 
-            if ($stmt->rowCount() > 0){
-                return 'Item do pedido '.$data['idPedido'].' inserido com sucesso!';
-            } else {
-                throw new \Exception('Falha ao inserir endereço!'); 
-            }
+        
+        public static function disableCupom($idCupom, $email){
+            $connPdo = DatabaseConnector::getConnection();
+            $sql = 'UPDATE cupom_cliente SET cupom_usado = true WHERE id_cupom_fk = :idCupom AND email_cli_fk = :email';
+            $stmt = $connPdo->prepare($sql);
+            $stmt->bindValue(':idCupom', $idCupom);
+            $stmt->bindValue(':email', $email);
+            $stmt -> execute();
+            $connPdo = null;
         }
 
         public static function get($data){

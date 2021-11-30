@@ -7,9 +7,10 @@
 
         public static function getAll(){
             $connPdo = DatabaseConnector::getConnection();
-            $sql = 'SELECT * FROM '.self::$table;
+            $sql = 'SELECT confeito_bolo AS nome_opcao, LOWER(imagem_confeito) AS imagem FROM '.self::$table;
             $stmt = $connPdo->prepare($sql);
             $stmt->execute();
+            $connPdo = null;
 
             if($stmt->rowCount() > 0){
                 return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -24,6 +25,7 @@
             $stmt = $connPdo->prepare($sql);
             $stmt->bindValue(':nome', $data[0]);
             $stmt->execute();
+            $connPdo = null;
 
             if($stmt->rowCount() > 0){
                 return $stmt->fetchAll(\PDO::FETCH_ASSOC);

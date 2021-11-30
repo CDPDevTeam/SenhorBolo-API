@@ -17,7 +17,23 @@
             $stmt -> execute();
 
             if ($stmt->rowCount() > 0){
-                return 'Usuário inserido com sucesso!';
+
+                $connPdoTeste = DatabaseConnector::getConnection();
+                $sqlCupom = 'INSERT INTO cupom_cliente
+                (id_cupom_fk, email_cli_fk, cupom_usado)
+                VALUES 
+                (1, :email, false),
+                (2, :email, false)';
+                $stmtCupom = $connPdoTeste->prepare($sqlCupom);
+                $stmtCupom->bindValue(':email', $data['email']);
+                $stmtCupom -> execute();
+
+                if($stmtCupom->rowCount()>0){
+                  return 'Usuário cadastrado com sucesso!';
+                } else {
+                  throw new \Exception('Falha ao inserir cupons de boas vindas!'); 
+                }
+
             } else {
                 throw new \Exception('Falha ao inserir usuário!'); 
             }

@@ -7,16 +7,16 @@
 
         public static function getAll(){
             $connPdo = DatabaseConnector::getConnection();
-            $sql = 'SELECT * FROM '.self::$table;
+            $sql = 'SELECT recheio_bolo AS nome_opcao, imagem_recheio AS imagem FROM '.self::$table;
             $stmt = $connPdo->prepare($sql);
             $stmt->execute();
+            $connPdo = null;
 
             if($stmt->rowCount() > 0){
                 return $stmt->fetchAll(\PDO::FETCH_ASSOC);
             } else {
                 throw new \Exception('Erro ao se conectar com o banco de dados!');
-            }
-        }
+            }        }
 
         public static function getRecheio($data){
             $connPdo = DatabaseConnector::getConnection();
@@ -24,6 +24,7 @@
             $stmt = $connPdo->prepare($sql);
             $stmt->bindValue(':nome', $data[0]);
             $stmt->execute();
+            $connPdo = null;
 
             if($stmt->rowCount() > 0){
                 return $stmt->fetchAll(\PDO::FETCH_ASSOC);

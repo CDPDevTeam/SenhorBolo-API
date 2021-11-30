@@ -29,7 +29,7 @@
                     $header = self::base64UrlEncode($header);
                     $payload = self::base64UrlEncode($payload);
         
-                    $sign = hash_hmac('sha256', $header . '.' . $payload, '5cgDVGsD7BU6EZst', true);
+                    $sign = hash_hmac('sha256', $header . '.' . $payload,  $_ENV['JWT_KEY'], true);
                     $sign = self::base64UrlEncode($sign);
         
                     $token = $header.'.'.$payload.'.'.$sign;

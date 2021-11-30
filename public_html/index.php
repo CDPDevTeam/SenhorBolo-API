@@ -1,6 +1,6 @@
 <?php
     header('Content-Type: application/json');
-    require_once '../vendor/autoload.php';
+    require '../vendor/autoload.php';
     use App\Services\AuthService;
 
     $apiRoute = explode('/', $_GET['url']);

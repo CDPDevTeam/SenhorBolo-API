@@ -9,7 +9,7 @@
             $connPdo = DatabaseConnector::getConnection();
             $sql =  'SELECT produto.id_prod,  produto.nome_prod, LOWER(produto.foto_prod) AS foto_prod,
             produto.categoria_prod_fk, categoria_produto.preco_catprod FROM produto, categoria_produto
-            WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod ORDER BY produto.id_prod';   
+            WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod AND produto.categoria_prod_fk != \'Bolo personalizado\' ORDER BY produto.id_prod';   
             $stmt = $connPdo->prepare($sql);
             $stmt->execute();
 
@@ -25,6 +25,7 @@
             $sql = 'SELECT produto.id_prod, produto.nome_prod, LOWER(produto.foto_prod) AS foto_prod,
             produto.categoria_prod_fk, categoria_produto.preco_catprod 
             FROM produto, categoria_produto WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod 
+            AND produto.categoria_prod_fk != \'Bolo personalizado\' 
             AND produto.nome_prod ILIKE \'%'.$data[0].'%\' ORDER BY produto.nome_prod';
             $stmt = $connPdo->prepare($sql);
             $stmt->execute();
@@ -43,6 +44,7 @@
             produto.categoria_prod_fk, categoria_produto.preco_catprod 
             FROM produto, categoria_produto
             WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod 
+            AND produto.categoria_prod_fk != \'Bolo personalizado\' 
             ORDER BY random() LIMIT 4';
             $stmt = $connPdo->prepare($sql);
             $stmt->execute();
@@ -55,13 +57,14 @@
         }
 
         // GET a partir do ID do bolo
-        public static function get($data){
+        public static function getCategory($category){
             $connPdo = DatabaseConnector::getConnection();
             $sql = 'SELECT produto.id_prod, produto.nome_prod, LOWER(produto.foto_prod) AS foto_prod,
             produto.categoria_prod_fk, categoria_produto.preco_catprod 
             FROM produto, categoria_produto WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod 
-            AND produto.nome_prod ILIKE \'%'.$data[0].'%\' ORDER BY produto.nome_prod';
+            AND produto.categoria_prod_fk = :categoria ORDER BY produto.nome_prod';
             $stmt = $connPdo->prepare($sql);
+            $stmt->bindValue(':categoria', $category[1]);
             $stmt->execute();
 
             if($stmt->rowCount() > 0){
@@ -74,32 +77,43 @@
 
 
         public static function insert($data){
-            if ($data['confeito'] === ''){
-                $data['confeito'] = null;
-            }
-            if ($data['recheio'] === ''){
-                $data['recheio'] = null;
-            }
-            if ($data['cobertura'] === ''){
-                $data['cobertura'] = null;
-            }
-
             $connPdo = DatabaseConnector::getConnection();
-            $sql = 'INSERT INTO '.self::$table.' (confeito_bolo_fk, massa_bolo_fk, recheio_bolo_fk, cobertura_bolo_fk, categoria_prod_fk, nome_prod, foto_prod) VALUES (:confeito, :massa, :recheio, :cobertura, :categoria, :nome, :foto)';
+            $sql = 'SELECT produto.id_prod, produto.nome_prod, LOWER(produto.foto_prod) AS foto_prod,
+            produto.categoria_prod_fk, categoria_produto.preco_catprod 
+            FROM produto, categoria_produto  WHERE produto.categoria_prod_fk = categoria_produto.nome_catprod 
+            AND produto.categoria_prod_fk = \'Bolo personalizado\'
+            AND produto.confeito_bolo_fk = :confeito AND produto.recheio_bolo_fk = :recheio
+            AND produto.cobertura_bolo_fk = :cobertura AND produto.massa_bolo_fk = :massa
+            AND produto.nome_prod = :nome AND produto.foto_prod = :foto LIMIT 1';
             $stmt = $connPdo->prepare($sql);
             $stmt->bindValue(':confeito', $data['confeito']);
             $stmt->bindValue(':massa', $data['massa']);
             $stmt->bindValue(':recheio', $data['recheio']);
             $stmt->bindValue(':cobertura', $data['cobertura']);
-            $stmt->bindValue(':categoria', 'Bolo personalizado');
-            $stmt->bindValue(':nome', $data['nome']);
-            $stmt->bindValue(':foto', $data['foto']);
+            $stmt->bindValue(':nome', 'Bolo personalizado');
+            $stmt->bindValue(':foto', 'personalizado.png');
             $stmt -> execute();
 
             if ($stmt->rowCount() > 0){
-                return 'Bolo personalizado inserido com sucesso!';
+                return $stmt->fetchAll(\PDO::FETCH_ASSOC);
             } else {
-                throw new \Exception('Falha ao cadastrar o bolo personalizado!'); 
+                $connPdo = null;
+                $connPdoInsert = DatabaseConnector::getConnection();
+                $sqlInsert = 'INSERT INTO '.self::$table.' (confeito_bolo_fk, massa_bolo_fk, recheio_bolo_fk, cobertura_bolo_fk, categoria_prod_fk, nome_prod, foto_prod) VALUES (:confeito, :massa, :recheio, :cobertura, :categoria, :nome, :foto)';
+                $stmtInsert = $connPdoInsert->prepare($sqlInsert);
+                $stmtInsert->bindValue(':nome', 'Bolo personalizado');
+                $stmtInsert->bindValue(':foto', 'personalizado.png');
+                $stmtInsert->bindValue(':confeito', $data['confeito']);
+                $stmtInsert->bindValue(':massa', $data['massa']);
+                $stmtInsert->bindValue(':recheio', $data['recheio']);
+                $stmtInsert->bindValue(':cobertura', $data['cobertura']);
+                $stmtInsert->bindValue(':categoria', 'Bolo personalizado');
+                $stmtInsert -> execute();
+                if($stmtInsert->rowCount() > 0){
+                    return self::insert($data);
+                } else {
+                    return 'Erro ao cadastrar o bolo';
+                }
             }
         }
 

@@ -7,6 +7,8 @@
             if($data){
                 if($data[0] === 'recomendacao'){
                     return Bolo::getRecommendation();
+                } else if($data[0] === 'categoria'){
+                    return Bolo::getCategory($data);
                 } else {
                     return Bolo::getSearch($data);
                 }
@@ -15,7 +17,7 @@
             }
         }
 
-        public function post(){
+        public function post(){ 
             if(AuthService::check()){
                 $postData = json_decode(file_get_contents('php://input'), true);
                 return Bolo::insert($postData);
